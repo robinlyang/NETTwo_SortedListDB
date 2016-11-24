@@ -8,12 +8,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace NETTwo_SortedListDB
 {
     public partial class Form1 : Form
     {
-        SortedList<string, person> database = new SortedList<string, person>(); 
+        //SortedList<string, person> database = new SortedList<string, person>(); 
+        db d = new db();
 
         public Form1()
         {
@@ -22,7 +26,10 @@ namespace NETTwo_SortedListDB
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            if(File.Exists(@"C:\Users\ryang\Desktop\db.dat"))
+            {
+                d = d.load();
+            }
         }
 
         private void add_Click(object sender, EventArgs e)
@@ -30,7 +37,7 @@ namespace NETTwo_SortedListDB
             person record = new person();
             record.name = name.Text;
             record.phone = Convert.ToInt64(phone.Text);
-            database[id.Text] = record;
+            d.database[id.Text] = record;
             message.Text = "Added";
         }
 
@@ -39,13 +46,13 @@ namespace NETTwo_SortedListDB
             person record = new person();
             record.name = name.Text;
             record.phone = Convert.ToInt64(phone.Text);
-            database[id.Text] = record;
+            d.database[id.Text] = record;
             message.Text = "Changed";
         }
 
         private void delete_Click(object sender, EventArgs e)
         {//delete button
-            database.Remove(id.Text);
+            d.database.Remove(id.Text);
             message.Text = "Deleted";
             id.Text = "";
             name.Text = "";
@@ -54,10 +61,10 @@ namespace NETTwo_SortedListDB
 
         private void read_Click(object sender, EventArgs e)
         {//read button
-            if(database.ContainsKey(id.Text))
+            if(d.database.ContainsKey(id.Text))
             {
-                name.Text = database[id.Text].name;
-                phone.Text = database[id.Text].phone.ToString();
+                name.Text = d.database[id.Text].name;
+                phone.Text = d.database[id.Text].phone.ToString();
                 message.Text = "";
             }
             else
@@ -68,10 +75,43 @@ namespace NETTwo_SortedListDB
                 phone.Text = "";
             }
         }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            d.save();
+        }
     }
+
+    //have a class for every table
+    [Serializable]
     class person
     {
         public string name;
         public long phone;
     }
+
+    //one class to persist
+    [Serializable]
+    class db
+    {
+        //each sorted list within the persist class for each table
+        public SortedList<string, person> database = new SortedList<string, person>();
+        public void save()
+        {
+            BinaryFormatter b = new BinaryFormatter();
+            FileStream f = new FileStream(@"C:\Users\ryang\Desktop\db.dat", FileMode.Create);
+            b.Serialize(f, this);
+            f.Close();
+
+        }
+        public db load()
+        {
+            BinaryFormatter b = new BinaryFormatter();
+            using (FileStream f = new FileStream(@"C:\Users\ryang\Desktop\db.dat", FileMode.Open))
+            {
+                return (db)b.Deserialize(f);
+            }
+        }
+    }
+
 }
